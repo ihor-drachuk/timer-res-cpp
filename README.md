@@ -26,8 +26,9 @@ A small, free clone of Lucas Hale's **TimerResolution.exe**. It shows the timer
 resolution Windows is currently using and lets you lock it to a finer value.
 
 The app (`timer-res.exe`) is a small window showing Min / Max / Current
-resolution, with **Maximum / 1 ms / Default** buttons, a system-tray icon, and a
-"Run at Windows startup" checkbox.
+resolution, with **Maximum / 1 ms / 4 ms / Default** buttons, a system-tray icon,
+and a "Run at Windows startup" checkbox. When started at logon it re-applies the
+resolution you last picked.
 
 Under the hood it uses the same Windows timer APIs (`NtSetTimerResolution`) as the original.
 
@@ -40,8 +41,8 @@ makes those problems disappear.
 
 On Windows 10 (2004+) and Windows 11 the timer resolution is **per-process** — it
 is released as soon as the program that set it exits. That's why the app stays in
-the tray, and why the command-line tool has a `hold` command (a one-shot `set`
-does not persist).
+the tray, and why the command-line tool has a `--hold` command (a one-shot
+`--set` does not persist).
 
 See also: [Microsoft — high-resolution timers](https://learn.microsoft.com/en-us/windows/win32/sysinfo/acquiring-high-resolution-time-stamps)
 and the original [TimerResolution by Lucas Hale](https://vvvv.org/contribution/windows-system-timer-tool).
@@ -66,8 +67,9 @@ startup" registry entry, which is easy to undo (see [Removing autostart](#removi
 
 ## Usage
 
-Click **Maximum** (finest the system supports, often 0.5 ms), **1 ms**, or
-**Default** (release). Tick **Run at Windows startup** to launch on logon. The X
+Click **Maximum** (finest the system supports, often 0.5 ms), **1 ms**, **4 ms**,
+or **Default** (release). Your choice is remembered, so when **Run at Windows
+startup** is ticked the app re-applies it automatically on the next logon. The X
 button minimizes to the tray; right-click the tray icon for **Show / Exit**.
 
 ## Build
@@ -85,6 +87,13 @@ or just run `build.cmd`.
 
 ```bat
 reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v TimerRes /f
+```
+
+The app also remembers your last choice under `HKCU\Software\timer-res` (so it can
+restore it at logon). To clear that too:
+
+```bat
+reg delete "HKCU\Software\timer-res" /f
 ```
 
 ## License

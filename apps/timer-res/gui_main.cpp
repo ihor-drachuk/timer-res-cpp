@@ -13,7 +13,10 @@
 //     Show / Exit menu.
 //   * A 1-second timer refreshes "Current" and re-applies the requested
 //     resolution (per-process drift safeguard on Windows 10 2004+/11).
-//   * Launch with "-min" to start hidden (used by the autostart entry).
+//   * Every button click persists the chosen value (HKCU\Software\timer-res);
+//     "Default" (release) clears it.
+//   * Launch with "--min" to start hidden (used by the autostart entry), and
+//     "--resume" to re-apply the last persisted value at startup.
 
 #include <windows.h>
 #include <shellapi.h>
@@ -97,10 +100,12 @@ void ShowMainWindow() {
     SetForegroundWindow(g_app.dlg);
 }
 
-// Apply a fixed desired value (kRelease for "Default").
+// Apply a fixed desired value (kRelease for "Default") and persist it so a
+// later --resume can restore it (kRelease clears the stored value).
 void ApplyDesired(std::uint32_t desired) {
     g_app.lastDesired = desired;
     timerres::Set(desired);
+    autostart::StoreLastValue(desired);
     RefreshLabels(false);
 }
 
@@ -129,12 +134,17 @@ INT_PTR CALLBACK DlgProc(HWND dlg, UINT msg, WPARAM wp, LPARAM lp) {
         case WM_COMMAND:
             switch (LOWORD(wp)) {
                 case IDB_MAXIMUM:
-                    if (const auto applied = timerres::SetMaximum())
+                    if (const auto applied = timerres::SetMaximum()) {
                         g_app.lastDesired = *applied;
+                        autostart::StoreLastValue(*applied);
+                    }
                     RefreshLabels(false);
                     return TRUE;
                 case IDB_DEFHI:
                     ApplyDesired(timerres::kOneMs);
+                    return TRUE;
+                case IDB_4MS:
+                    ApplyDesired(timerres::kFourMs);
                     return TRUE;
                 case IDB_DEFAULT:
                     ApplyDesired(timerres::kRelease);
@@ -189,15 +199,15 @@ INT_PTR CALLBACK DlgProc(HWND dlg, UINT msg, WPARAM wp, LPARAM lp) {
     return FALSE;
 }
 
-// True if any whole command-line token is exactly "-min" (or "/min").
-// Tokenized, so it won't match "-minimize" or a path that contains "-min".
-bool WantsMinimized() {
+// True if any whole command-line token equals `flag` (case-insensitive).
+// Tokenized, so "--min" won't match "--minimize" or a path containing it.
+bool HasFlag(std::wstring_view flag) {
     int argc = 0;
     LPWSTR* argv = CommandLineToArgvW(GetCommandLineW(), &argc);
     if (!argv) return false;
     bool found = false;
     for (int i = 1; i < argc; ++i) {
-        if (_wcsicmp(argv[i], L"-min") == 0 || _wcsicmp(argv[i], L"/min") == 0) {
+        if (_wcsicmp(argv[i], flag.data()) == 0) {
             found = true;
             break;
         }
@@ -205,6 +215,9 @@ bool WantsMinimized() {
     LocalFree(argv);
     return found;
 }
+
+bool WantsMinimized() { return HasFlag(L"--min"); }
+bool WantsResume()    { return HasFlag(L"--resume"); }
 
 }  // namespace
 
@@ -216,6 +229,15 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE, LPWSTR, int) {
                     L"This Windows build is not supported.",
                     L"Timer Resolution", MB_ICONERROR | MB_OK);
         return 2;
+    }
+
+    // Restore the last persisted value before the UI comes up, so the dialog's
+    // first refresh shows it and the 1-second timer keeps re-applying it.
+    if (WantsResume()) {
+        if (const auto v = autostart::LoadLastValue()) {
+            timerres::Set(v);
+            g_app.lastDesired = v;
+        }
     }
 
     // Modeless dialog so we own the message loop (needed for the tray icon).

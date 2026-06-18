@@ -18,9 +18,10 @@ BEGIN
     LTEXT           "Current Resolution", -1, 14, 61, 80, 9
     RTEXT           "---", IDS_CURRENT, 100, 61, 100, 9
 
-    PUSHBUTTON      "Maximum", IDB_MAXIMUM, 7, 84, 60, 14
-    PUSHBUTTON      "1 ms", IDB_DEFHI, 78, 84, 60, 14
-    DEFPUSHBUTTON   "Default", IDB_DEFAULT, 149, 84, 60, 14
+    PUSHBUTTON      "Maximum", IDB_MAXIMUM, 7, 84, 47, 14
+    PUSHBUTTON      "1 ms", IDB_DEFHI, 60, 84, 47, 14
+    PUSHBUTTON      "4 ms", IDB_4MS, 113, 84, 47, 14
+    DEFPUSHBUTTON   "Default", IDB_DEFAULT, 166, 84, 47, 14
 
     AUTOCHECKBOX    "Run at Windows startup", IDC_AUTORUN, 7, 108, 160, 12
 END

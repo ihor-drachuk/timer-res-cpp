@@ -16,6 +16,7 @@
 #define IDB_DEFHI       302   // "1 ms"
 #define IDB_DEFAULT     303   // release
 #define IDC_AUTORUN     304
+#define IDB_4MS         305   // "4 ms"
 
 #define IDM_SHOW        401
 #define IDM_EXIT        402

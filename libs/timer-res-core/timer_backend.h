@@ -28,6 +28,7 @@ struct Resolution {
 // Well-known desired values (100-ns units). Pass 0 to release.
 inline constexpr std::uint32_t kRelease = 0;
 inline constexpr std::uint32_t kOneMs   = 10000;   // 1 ms
+inline constexpr std::uint32_t kFourMs  = 40000;   // 4 ms
 
 // Resolves the ntdll entry points. Returns false if they are unavailable
 // (should never happen on a real Windows install). Safe to call repeatedly.

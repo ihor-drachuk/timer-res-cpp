@@ -6,6 +6,7 @@
 
 #include <windows.h>
 
+#include <cstdint>
 #include <optional>
 #include <string>
 
@@ -14,6 +15,10 @@ namespace {
 
 constexpr std::wstring_view kRunKey =
     L"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
+
+// Our own key, holding the last-applied timer value so --resume can restore it.
+constexpr std::wstring_view kAppKey = L"Software\\timer-res";
+constexpr wchar_t kLastValueName[] = L"LastValue";
 
 // RAII wrapper around an open registry key.
 class RegKey {
@@ -62,7 +67,7 @@ private:
     cmd.reserve(exe->size() + 8);
     cmd += L'"';
     cmd += *exe;
-    cmd += L"\" -min";
+    cmd += L"\" --min --resume";
     return cmd;
 }
 
@@ -91,6 +96,37 @@ bool Disable() {
     if (!key.valid()) return true;  // key missing -> nothing to remove
     const LONG rc = RegDeleteValueW(key.get(), kValueName);
     return rc == ERROR_SUCCESS || rc == ERROR_FILE_NOT_FOUND;
+}
+
+void StoreLastValue(std::uint32_t value) {
+    if (value == 0) {
+        // Release: drop the stored value so --resume becomes a no-op. The key
+        // may not exist yet (never set), which is fine.
+        const RegKey key{HKEY_CURRENT_USER, kAppKey, KEY_SET_VALUE};
+        if (key.valid()) RegDeleteValueW(key.get(), kLastValueName);
+        return;
+    }
+    // RegCreateKeyExW opens-or-creates; RegKey only opens, so do it directly.
+    HKEY raw {};
+    if (RegCreateKeyExW(HKEY_CURRENT_USER, kAppKey.data(), 0, nullptr,
+                        REG_OPTION_NON_VOLATILE, KEY_SET_VALUE, nullptr, &raw,
+                        nullptr) != ERROR_SUCCESS)
+        return;
+    const DWORD v = value;
+    RegSetValueExW(raw, kLastValueName, 0, REG_DWORD,
+                   reinterpret_cast<const BYTE*>(&v), sizeof(v));
+    RegCloseKey(raw);
+}
+
+std::uint32_t LoadLastValue() {
+    const RegKey key{HKEY_CURRENT_USER, kAppKey, KEY_READ};
+    if (!key.valid()) return 0;
+    DWORD v = 0, type = 0, size = sizeof(v);
+    if (RegQueryValueExW(key.get(), kLastValueName, nullptr, &type,
+                         reinterpret_cast<BYTE*>(&v), &size) != ERROR_SUCCESS)
+        return 0;
+    if (type != REG_DWORD || size != sizeof(v)) return 0;
+    return v;
 }
 
 }  // namespace autostart
