@@ -1,0 +1,16 @@
+# CMake build tree
+/build/
+out/
+
+# build outputs
+*.exe
+*.obj
+*.pdb
+*.ilk
+
+# IDE
+*.user
+.vs/
+
+# keep the embedded icon
+!*.ico

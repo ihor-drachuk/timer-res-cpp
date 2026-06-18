@@ -1,0 +1,26 @@
+#include <windows.h>
+#include "resource.h"
+
+IDI_APP ICON "timer-res.ico"
+
+IDD_MAIN DIALOGEX 0, 0, 220, 130
+STYLE DS_SETFONT | DS_CENTER | WS_MINIMIZEBOX | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Set Timer Resolution"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    GROUPBOX        "Timer Resolution Range", -1, 7, 5, 206, 40
+    LTEXT           "Minimum Resolution", -1, 14, 18, 80, 9
+    RTEXT           "---", IDS_MIN, 100, 18, 100, 9
+    LTEXT           "Maximum Resolution", -1, 14, 30, 80, 9
+    RTEXT           "---", IDS_MAX, 100, 30, 100, 9
+
+    GROUPBOX        "Current Timer Information", -1, 7, 49, 206, 28
+    LTEXT           "Current Resolution", -1, 14, 61, 80, 9
+    RTEXT           "---", IDS_CURRENT, 100, 61, 100, 9
+
+    PUSHBUTTON      "Maximum", IDB_MAXIMUM, 7, 84, 60, 14
+    PUSHBUTTON      "1 ms", IDB_DEFHI, 78, 84, 60, 14
+    DEFPUSHBUTTON   "Default", IDB_DEFAULT, 149, 84, 60, 14
+
+    AUTOCHECKBOX    "Run at Windows startup", IDC_AUTORUN, 7, 108, 160, 12
+END

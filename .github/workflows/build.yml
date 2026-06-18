@@ -1,0 +1,53 @@
+name: build
+
+on:
+  push:
+    branches: ['**']
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Configure
+        run: cmake -S . -B build -A x64
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Collect binary
+        shell: pwsh
+        run: |
+          # Ship only the user-facing app; the test tool is build-only.
+          # Find it regardless of generator layout (VS emits a Release/ subfolder).
+          New-Item -ItemType Directory -Force dist | Out-Null
+          Get-ChildItem -Recurse build -Filter timer-res.exe | Select-Object -First 1 | Copy-Item -Destination dist/
+          Get-Item dist/*.exe | Format-Table Name, Length
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: timer-res-cpp-binaries
+          path: dist/*.exe
+
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: windows-latest
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: timer-res-cpp-binaries
+          path: dist
+
+      - name: Create release
+        uses: softprops/action-gh-release@v3
+        with:
+          files: dist/*.exe
